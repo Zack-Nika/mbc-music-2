@@ -1,0 +1,19 @@
+{
+  "name": "discord-music-bot",
+  "version": "1.0.0",
+  "description": "A Discord music bot using Lavalink (via erela.js) that streams YouTube and Spotify playlists with Darija responses.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "erela.js": "github:MenuDocs/erela.js#3.3.0",
+    "dotenv": "^16.0.3",
+    "isomorphic-unfetch": "^3.1.0",
+    "spotify-url-info": "^3.2.18"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
