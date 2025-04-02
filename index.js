@@ -36,7 +36,7 @@ const prefix = '+';
 client.manager = new Manager({
   nodes: [
     {
-      host: process.env.LAVALINK_HOST,       // e.g., your VPS IP address
+      host: process.env.LAVALINK_HOST,       // e.g., your droplet IP address
       port: Number(process.env.LAVALINK_PORT || 2333),
       password: process.env.LAVALINK_PASSWORD,
       secure: process.env.LAVALINK_SECURE === 'true'
@@ -201,7 +201,7 @@ client.on('messageCreate', async message => {
           return message.reply("⚠️ ما يمكنش نشغل هاد النوع ديال روابط Spotify مباشرة.");
         }
       } else {
-        // Handle YouTube or search query
+        // Handle YouTube search or direct URL
         const res = await client.manager.search("ytsearch:" + query, message.author);
         if (res.loadType === 'LOAD_FAILED' || !res.tracks.length) {
           return message.reply("❌ ما قدرش البوت يلقی الأغنية المطلوبة.");
@@ -256,5 +256,5 @@ client.on('messageCreate', async message => {
   }
 });
 
-// Log in to Discord with your token from the environment variables
+// Log in to Discord with your token
 client.login(process.env.DISCORD_TOKEN);
