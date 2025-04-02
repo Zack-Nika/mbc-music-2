@@ -1,10 +1,20 @@
-// index.js - Discord Music Bot using Lavalink via erela.js (Final Version)
 require('dotenv').config();
 
-process.on('unhandledRejection', error => {
-  console.error('Unhandled promise rejection:', error);
+// --- Begin Express Server Setup ---
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send("Bot is running!");
 });
 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Express server is listening on port ${PORT}`);
+});
+// --- End Express Server Setup ---
+
+// --- Begin Discord Bot Code ---
 const { Client, IntentsBitField } = require('discord.js');
 const { Manager } = require('erela.js');
 const fetch = require('isomorphic-unfetch');
@@ -163,7 +173,7 @@ client.on('messageCreate', async message => {
           const trackName = spotifyData.name || spotifyData.title;
           const artistName = (spotifyData.artists && spotifyData.artists[0] && spotifyData.artists[0].name) || '';
           const searchTerm = `${trackName} ${artistName}`.trim();
-          const res = await client.manager.search(searchTerm, message.author);
+          const res = await client.manager.search("ytsearch:" + searchTerm, message.author);
           if (!res.tracks.length) {
             return message.reply("❌ ما لقيتش هاد الأغنية ف يوتيوب.");
           }
@@ -181,7 +191,7 @@ client.on('messageCreate', async message => {
             const artist = (trackInfo.artists && trackInfo.artists[0] && trackInfo.artists[0].name) || '';
             if (!name) continue;
             const searchTerm = `${name} ${artist}`.trim();
-            const res = await client.manager.search(searchTerm, message.author);
+            const res = await client.manager.search("ytsearch:" + searchTerm, message.author);
             if (res.tracks.length) {
               player.queue.add(res.tracks[0]);
             }
@@ -192,7 +202,7 @@ client.on('messageCreate', async message => {
         }
       } else {
         // Handle YouTube or search query
-        const res = await client.manager.search(query, message.author);
+        const res = await client.manager.search("ytsearch:" + query, message.author);
         if (res.loadType === 'LOAD_FAILED' || !res.tracks.length) {
           return message.reply("❌ ما قدرش البوت يلقی الأغنية المطلوبة.");
         }
@@ -246,4 +256,5 @@ client.on('messageCreate', async message => {
   }
 });
 
+// Log in to Discord with your token from the environment variables
 client.login(process.env.DISCORD_TOKEN);
