@@ -1,5 +1,9 @@
-// index.js - Discord Music Bot using Lavalink via erela.js (Published version 2.x)
+// index.js - Discord Music Bot using Lavalink via erela.js (Final Version)
 require('dotenv').config();
+
+process.on('unhandledRejection', error => {
+  console.error('Unhandled promise rejection:', error);
+});
 
 const { Client, IntentsBitField } = require('discord.js');
 const { Manager } = require('erela.js');
@@ -18,17 +22,17 @@ const client = new Client({
 
 const prefix = '+';
 
-// Set up Erela.js Lavalink Manager with your node configuration
+// Set up Erela.js Lavalink Manager using environment variables
 client.manager = new Manager({
   nodes: [
     {
-      host: process.env.LAVALINK_HOST,       // e.g., "123.45.67.89"
+      host: process.env.LAVALINK_HOST,       // e.g., your VPS IP address
       port: Number(process.env.LAVALINK_PORT || 2333),
       password: process.env.LAVALINK_PASSWORD,
       secure: process.env.LAVALINK_SECURE === 'true'
     }
   ],
-  // Function to send voice data to Discord
+  autoPlay: true,
   send(id, payload) {
     const guild = client.guilds.cache.get(id);
     if (guild) guild.shard.send(payload);
@@ -80,7 +84,7 @@ client.manager.on('trackStuck', (player, track, payload) => {
   player.stop();
 });
 
-// Initialize Lavalink manager when the Discord client is ready
+// Initialize Lavalink manager when Discord client is ready
 client.once('ready', () => {
   console.log(`🤖 Logged in as ${client.user.tag}!`);
   client.manager.init(client.user.id);
@@ -100,14 +104,11 @@ client.on('messageCreate', async message => {
   const args = message.content.slice(prefix.length).trim().split(/\s+/);
   const command = args.shift()?.toLowerCase();
   
-  // Ping command
   if (command === 'ping') {
     const sent = await message.reply('🏓 جارٍ حساب وقت الاستجابة...');
     const latency = sent.createdTimestamp - message.createdTimestamp;
     sent.edit(`🏓 **Pong!** السرعة: ${latency}ms`);
   }
-  
-  // Join command
   else if (command === 'join') {
     if (!message.member.voice.channel) {
       return message.reply("🔊 خاصك تكون فشي روم صوتي باش تستعمل هاد الأمر!");
@@ -132,8 +133,6 @@ client.on('messageCreate', async message => {
       return message.reply("✅ دخلت للروم الصوتي ديالك!");
     }
   }
-  
-  // Play command
   else if (command === 'play') {
     if (!message.member.voice.channel) {
       return message.reply("🔊 خاصك تكون فشي روم صوتي باش تشغل الموسيقى!");
@@ -192,7 +191,7 @@ client.on('messageCreate', async message => {
           return message.reply("⚠️ ما يمكنش نشغل هاد النوع ديال روابط Spotify مباشرة.");
         }
       } else {
-        // Handle YouTube search or direct URL
+        // Handle YouTube or search query
         const res = await client.manager.search(query, message.author);
         if (res.loadType === 'LOAD_FAILED' || !res.tracks.length) {
           return message.reply("❌ ما قدرش البوت يلقی الأغنية المطلوبة.");
@@ -217,8 +216,6 @@ client.on('messageCreate', async message => {
       message.reply("🛑 وقع مشكل فمحاولة تشغيل هاد الموسيقى.");
     }
   }
-  
-  // Skip command
   else if (command === 'skip') {
     const player = client.manager.players.get(message.guild.id);
     if (!player || !player.queue.current) {
@@ -227,8 +224,6 @@ client.on('messageCreate', async message => {
     player.stop();
     message.reply("⏭️ تخطّيت للأغنية اللّي موراها.");
   }
-  
-  // Stop command
   else if (command === 'stop') {
     const player = client.manager.players.get(message.guild.id);
     if (!player) {
@@ -237,8 +232,6 @@ client.on('messageCreate', async message => {
     player.destroy();
     message.reply("🛑 وقفت الموسيقى وخرجت من الروم الصوتي.");
   }
-  
-  // Help command
   else if (command === 'cmd' || command === 'help') {
     const helpText = "**الأوامر المتوفرة:**\n" +
       "```\n" +
