@@ -20,7 +20,6 @@ const { Manager } = require('erela.js');
 const fetch = require('isomorphic-unfetch');
 const { getData } = require('spotify-url-info')(fetch);
 
-// Create Discord client with necessary intents
 const client = new Client({
   intents: [
     IntentsBitField.Flags.Guilds, 
@@ -32,11 +31,10 @@ const client = new Client({
 
 const prefix = '+';
 
-// Set up Erela.js Lavalink Manager using environment variables
 client.manager = new Manager({
   nodes: [
     {
-      host: process.env.LAVALINK_HOST,       // e.g., your droplet IP address
+      host: process.env.LAVALINK_HOST,       // your droplet IP
       port: Number(process.env.LAVALINK_PORT || 2333),
       password: process.env.LAVALINK_PASSWORD,
       secure: process.env.LAVALINK_SECURE === 'true'
@@ -81,7 +79,7 @@ client.manager.on('trackError', (player, track, payload) => {
   console.error(`Track error for ${track.title}: ${payload.error}`);
   const textChannel = client.channels.cache.get(player.textChannel);
   if (textChannel) {
-    textChannel.send(`⚠️ ما قدرش البوت يشغل **${track.title}** بسبب خطأ. كنزوّدو للأغنية الموالية.`);
+    textChannel.send(`⚠️ ما قدرش البوت يشغل **${track.title}** بسبب خطأ.`);
   }
   player.stop();
 });
@@ -89,7 +87,7 @@ client.manager.on('trackStuck', (player, track, payload) => {
   console.error(`Track stuck for ${track.title}: ${payload.thresholdMs}ms`);
   const textChannel = client.channels.cache.get(player.textChannel);
   if (textChannel) {
-    textChannel.send(`⚠️ تعطل التشغيل ف **${track.title}** بزّاف. كنمرّو للأغنية اللي موراها...`);
+    textChannel.send(`⚠️ تعطل التشغيل ف **${track.title}** بزّاف.`);
   }
   player.stop();
 });
@@ -166,7 +164,7 @@ client.on('messageCreate', async message => {
     }
     
     try {
-      // Handle Spotify URL (track or playlist)
+      // For Spotify URLs
       if (query.includes('open.spotify.com/')) {
         const spotifyData = await getData(query);
         if (spotifyData.type === 'track') {
@@ -174,7 +172,9 @@ client.on('messageCreate', async message => {
           const artistName = (spotifyData.artists && spotifyData.artists[0] && spotifyData.artists[0].name) || '';
           const searchTerm = `${trackName} ${artistName}`.trim();
           const res = await client.manager.search("ytsearch:" + searchTerm, message.author);
+          console.log("Spotify Track Search Result:", res);
           if (!res.tracks.length) {
+            console.error("No tracks found for Spotify track search:", searchTerm);
             return message.reply("❌ ما لقيتش هاد الأغنية ف يوتيوب.");
           }
           const track = res.tracks[0];
@@ -183,6 +183,7 @@ client.on('messageCreate', async message => {
         } else if (spotifyData.type === 'playlist' || spotifyData.type === 'album') {
           const tracks = spotifyData.tracks?.items || [];
           if (!tracks.length) {
+            console.error("No tracks found in Spotify playlist/album:", query);
             return message.reply("❌ ما لقيتش الأغاني ف هاد الـSpotify الرابط.");
           }
           for (const item of tracks) {
@@ -192,18 +193,21 @@ client.on('messageCreate', async message => {
             if (!name) continue;
             const searchTerm = `${name} ${artist}`.trim();
             const res = await client.manager.search("ytsearch:" + searchTerm, message.author);
+            console.log("Spotify Playlist Track Search Result:", res);
             if (res.tracks.length) {
               player.queue.add(res.tracks[0]);
             }
           }
-          message.reply(`✔️ ضفت **${player.queue.size}** ديال الأغاني من سبوتيفاي للقائمة!`);
+          message.reply(`✔️ ضفت **${player.queue.size}** ديال الأغاني من سبوتيفاي للقائمة ديال الموسيقى!`);
         } else {
           return message.reply("⚠️ ما يمكنش نشغل هاد النوع ديال روابط Spotify مباشرة.");
         }
       } else {
-        // Handle YouTube search or direct URL
+        // For YouTube search or direct URLs
         const res = await client.manager.search("ytsearch:" + query, message.author);
+        console.log("YouTube Search Result:", res);
         if (res.loadType === 'LOAD_FAILED' || !res.tracks.length) {
+          console.error("Search failed or no tracks found for:", query);
           return message.reply("❌ ما قدرش البوت يلقی الأغنية المطلوبة.");
         }
         if (res.loadType === 'PLAYLIST_LOADED') {
@@ -222,7 +226,7 @@ client.on('messageCreate', async message => {
         player.play();
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error in +play command:", err);
       message.reply("🛑 وقع مشكل فمحاولة تشغيل هاد الموسيقى.");
     }
   }
