@@ -164,62 +164,28 @@ client.on('messageCreate', async message => {
     }
     
     try {
-      // For Spotify URLs
-      if (query.includes('open.spotify.com/')) {
-        const spotifyData = await getData(query);
-        if (spotifyData.type === 'track') {
-          const trackName = spotifyData.name || spotifyData.title;
-          const artistName = (spotifyData.artists && spotifyData.artists[0] && spotifyData.artists[0].name) || '';
-          const searchTerm = `${trackName} ${artistName}`.trim();
-          const res = await client.manager.search("ytsearch:" + searchTerm, message.author);
-          console.log("Spotify Track Search Result:", res);
-          if (!res.tracks.length) {
-            console.error("No tracks found for Spotify track search:", searchTerm);
-            return message.reply("❌ ما لقيتش هاد الأغنية ف يوتيوب.");
-          }
-          const track = res.tracks[0];
-          player.queue.add(track);
-          message.reply(`✔️ ضفت **${track.title}** للقائمة ديال الموسيقى!`);
-        } else if (spotifyData.type === 'playlist' || spotifyData.type === 'album') {
-          const tracks = spotifyData.tracks?.items || [];
-          if (!tracks.length) {
-            console.error("No tracks found in Spotify playlist/album:", query);
-            return message.reply("❌ ما لقيتش الأغاني ف هاد الـSpotify الرابط.");
-          }
-          for (const item of tracks) {
-            const trackInfo = spotifyData.type === 'playlist' ? item.track : item;
-            const name = trackInfo.name;
-            const artist = (trackInfo.artists && trackInfo.artists[0] && trackInfo.artists[0].name) || '';
-            if (!name) continue;
-            const searchTerm = `${name} ${artist}`.trim();
-            const res = await client.manager.search("ytsearch:" + searchTerm, message.author);
-            console.log("Spotify Playlist Track Search Result:", res);
-            if (res.tracks.length) {
-              player.queue.add(res.tracks[0]);
-            }
-          }
-          message.reply(`✔️ ضفت **${player.queue.size}** ديال الأغاني من سبوتيفاي للقائمة ديال الموسيقى!`);
-        } else {
-          return message.reply("⚠️ ما يمكنش نشغل هاد النوع ديال روابط Spotify مباشرة.");
-        }
+      let res;
+      // Check if query is a URL
+      if (query.startsWith("http://") || query.startsWith("https://")) {
+        res = await client.manager.search(query, message.author);
       } else {
-        // For YouTube search or direct URLs
-        const res = await client.manager.search("ytsearch:" + query, message.author);
-        console.log("YouTube Search Result:", res);
-        if (res.loadType === 'LOAD_FAILED' || !res.tracks.length) {
-          console.error("Search failed or no tracks found for:", query);
-          return message.reply("❌ ما قدرش البوت يلقی الأغنية المطلوبة.");
-        }
-        if (res.loadType === 'PLAYLIST_LOADED') {
-          for (const track of res.tracks) {
-            player.queue.add(track);
-          }
-          message.reply(`✔️ ضفت **${res.tracks.length}** ديال الأغاني للقائمة ديال الموسيقى!`);
-        } else {
-          const track = res.tracks[0];
+        res = await client.manager.search("ytsearch:" + query, message.author);
+      }
+      console.log("Search Result:", res);
+      
+      if (res.loadType === 'LOAD_FAILED' || !res.tracks.length) {
+        console.error("Search failed or no tracks found for:", query);
+        return message.reply("❌ ما قدرش البوت يلقی الأغنية المطلوبة.");
+      }
+      if (res.loadType === 'PLAYLIST_LOADED') {
+        for (const track of res.tracks) {
           player.queue.add(track);
-          message.reply(`✔️ ضفت **${track.title}** للقائمة ديال الموسيقى!`);
         }
+        message.reply(`✔️ ضفت **${res.tracks.length}** ديال الأغاني للقائمة ديال الموسيقى!`);
+      } else {
+        const track = res.tracks[0];
+        player.queue.add(track);
+        message.reply(`✔️ ضفت **${track.title}** للقائمة ديال الموسيقى!`);
       }
       
       if (!player.playing && !player.paused && player.queue.size) {
